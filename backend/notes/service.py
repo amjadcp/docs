@@ -1,6 +1,7 @@
-from database.config import get_db
+from ..database.config import get_db
+from ..auth.models import User
 from .models import Note
-from datetime import datetime, timezone
+from datetime import datetime
 import aiohttp
 import os
 
