@@ -1,99 +1,71 @@
-import { useState, useEffect } from 'react';
-import { Note } from './types/note';
-import { api } from './services/api';
-import { NotesList } from './components/NotesList';
-import { NoteEditor } from './components/NoteEditor';
+// src/App.tsx
+import React, { useState, useEffect } from 'react';
+import Sidebar from './components/Sidebar';
+import NoteList from './components/NoteList';
+import NoteEditor from './components/NoteEditor';
+import { Note } from './types/Note';
 
-function App() {
-    const [notes, setNotes] = useState<Note[]>([]);
-    const [selectedNote, setSelectedNote] = useState<Note | undefined>();
-    const [isEditing, setIsEditing] = useState(false);
+const App: React.FC = () => {
+  // In the future you might fetch these from your Python backend
+  const [notes, setNotes] = useState<Note[]>([]);
+  const [selectedNote, setSelectedNote] = useState<Note | null>(null);
 
-    useEffect(() => {
-        loadNotes();
-    }, []);
+  // Example useEffect to simulate fetching notes
+  useEffect(() => {
+    // TODO: Replace with an API call to your backend
+    const initialNotes: Note[] = [
+      {
+        id: 1,
+        title: 'Welcome Note',
+        content: 'This is your first note. Click to edit!',
+        version: 1,
+        createdAt: new Date(),
+      }
+    ];
+    setNotes(initialNotes);
+    setSelectedNote(initialNotes[0]);
+  }, []);
 
-    const loadNotes = async () => {
-        try {
-            const fetchedNotes = await api.getNotes();
-            setNotes(fetchedNotes);
-        } catch (error) {
-            console.error('Error loading notes:', error);
-        }
+  const handleSelectNote = (note: Note) => {
+    setSelectedNote(note);
+  };
+
+  const handleNewNote = () => {
+    const newNote: Note = {
+      id: Date.now(), // simplistic unique id
+      title: 'New Note',
+      content: '',
+      version: 1,
+      createdAt: new Date(),
     };
+    setNotes(prev => [newNote, ...prev]);
+    setSelectedNote(newNote);
+  };
 
-    const handleAddNote = () => {
-        setSelectedNote(undefined);
-        setIsEditing(true);
-    };
-
-    const handleEditNote = (note: Note) => {
-        setSelectedNote(note);
-        setIsEditing(true);
-    };
-
-    const handleDeleteNote = async (noteId: number) => {
-        if (window.confirm('Are you sure you want to delete this note?')) {
-            try {
-                const success = await api.deleteNote(noteId);
-                if (success) {
-                    setNotes(notes.filter(note => note.id !== noteId));
-                }
-            } catch (error) {
-                console.error('Error deleting note:', error);
-            }
-        }
-    };
-
-    const handleSaveNote = async (title: string, content: string) => {
-        try {
-            if (selectedNote) {
-                const success = await api.updateNote(selectedNote.id, title, content);
-                if (success) {
-                    await loadNotes();
-                }
-            } else {
-                const newNote = await api.addNote(title, content);
-                setNotes([newNote, ...notes]);
-            }
-            setIsEditing(false);
-            setSelectedNote(undefined);
-        } catch (error) {
-            console.error('Error saving note:', error);
-        }
-    };
-
-    return (
-        <div className="container mx-auto px-4 py-8">
-            {isEditing ? (
-                <NoteEditor
-                    note={selectedNote}
-                    onSave={handleSaveNote}
-                    onCancel={() => {
-                        setIsEditing(false);
-                        setSelectedNote(undefined);
-                    }}
-                />
-            ) : (
-                <>
-                    <div className="flex justify-between items-center mb-6">
-                        <h1 className="text-2xl font-bold">My Notes</h1>
-                        <button
-                            onClick={handleAddNote}
-                            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-                        >
-                            Add Note
-                        </button>
-                    </div>
-                    <NotesList
-                        notes={notes}
-                        onEditNote={handleEditNote}
-                        onDeleteNote={handleDeleteNote}
-                    />
-                </>
-            )}
-        </div>
+  const handleSaveNote = (updatedNote: Note) => {
+    setNotes(prev =>
+      prev.map(note => (note.id === updatedNote.id ? updatedNote : note))
     );
-}
+  };
+
+  return (
+    <div className="flex h-screen">
+      <Sidebar onNewNote={handleNewNote} />
+      <div className="flex-1 flex flex-col">
+        <header className="p-4 bg-gray-100 shadow">
+          <h1 className="text-xl font-bold">Notes App</h1>
+        </header>
+        <main className="flex flex-1 overflow-hidden">
+          <div className="w-1/3 border-r overflow-y-auto">
+            <NoteList notes={notes} onSelectNote={handleSelectNote} />
+          </div>
+          <div className="flex-1 overflow-y-auto">
+            <NoteEditor note={selectedNote} onSave={handleSaveNote} />
+          </div>
+        </main>
+      </div>
+    </div>
+  );
+};
 
 export default App;
